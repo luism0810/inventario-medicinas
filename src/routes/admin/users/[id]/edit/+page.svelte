@@ -112,22 +112,5 @@
 				</div>
 			</form>
 		{/if}
-
-		<!-- Delete User Button -->
-		<h3 class="text-xl font-semibold mt-8 mb-4">Eliminar Usuario</h3>
-		<form method="POST" action="?/delete" use:enhance>
-			<button
-				type="submit"
-				class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-				on:click|preventDefault={() => {
-					if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
-						// @ts-ignore
-						this.form.submit();
-					}
-				}}
-			>
-				Eliminar Usuario
-			</button>
-		</form>
 	</div>
 </div>

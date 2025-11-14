@@ -46,6 +46,20 @@
 									class="text-gray-700 hover:bg-gray-100 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
 									>Salidas</a
 								>
+
+								{#if data.user.role === 'ADMIN'}
+									<div class="border-l border-gray-300 h-6 mx-3"></div>
+									<a
+										href="/admin/users"
+										class="text-gray-700 hover:bg-gray-100 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+										>Usuarios</a
+									>
+									<a
+										href="/admin/audit-log"
+										class="text-gray-700 hover:bg-gray-100 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+										>Audit Log</a
+									>
+								{/if}
 							</div>
 						</div>
 					{/if}

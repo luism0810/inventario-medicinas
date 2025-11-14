@@ -2,9 +2,15 @@ import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/prisma';
 import bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
+import type { Actions } from './$types';
+import { recordAuditLog } from '$lib/audit';
 
-export const actions = {
-	create: async ({ request }) => {
+export const actions: Actions = {
+	create: async ({ request, locals }) => {
+		if (!locals.user) {
+			return fail(401, { message: 'No autorizado.' });
+		}
+
 		const data = await request.formData();
 		const username = data.get('username');
 		const password = data.get('password');
@@ -26,7 +32,7 @@ export const actions = {
 		const hashedPassword = await bcrypt.hash(password.toString(), 10);
 
 		try {
-			await db.user.create({
+			const newUser = await db.user.create({
 				data: {
 					username: username.toString(),
 					password: hashedPassword,
@@ -34,6 +40,11 @@ export const actions = {
 					active
 				}
 			});
+			await recordAuditLog(
+				locals.user.id,
+				'Usuario Creado',
+				`Nuevo usuario "${newUser.username}" con ID ${newUser.id} creado.`
+			);
 		} catch (error) {
 			console.error('Error creating user:', error);
 			return fail(500, { message: 'Error al crear el usuario.' });
