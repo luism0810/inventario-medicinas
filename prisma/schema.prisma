@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  username  String     @unique
+  password  String
+  role      Role       @default(USER)
+  active    Boolean    @default(true)
+  auditLogs AuditLog[]
+  sessions  Session[]
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  details   String
+}
+
+enum Presentacion {
+  UNIDAD
+  GALON
+  KILO
+  CUNETE
+  LITRO
+  CAJA
+  BOLSA
+  METRO
+  ROLLO
+}
+
+model Producto {
+  id           Int          @id @default(autoincrement())
+  nombre       String       @unique
+  presentacion Presentacion @default(UNIDAD)
+  precio       Float
+  existencia   Int
+  stock_minimo Int          @default(0)
+  stock_maximo Int          @default(0)
+  ingresos     IngresoProducto[]
+  salidas      SalidaProducto[]
+}
+
+model Cliente {
+  id          Int      @id @default(autoincrement())
+  nombre      String   @unique
+  codigo      String?
+  direccion   String?
+  responsable String?
+  cedulaRif   String?
+  salidas     Salida[]
+}
+
+model Proveedor {
+  id        Int       @id @default(autoincrement())
+  nombre    String    @unique
+  direccion String?
+  telefono  String?
+  ingresos  Ingreso[]
+}
+
+model Ingreso {
+  id          Int             @id @default(autoincrement())
+  documento   String          @unique
+  proveedorId Int
+  proveedor   Proveedor       @relation(fields: [proveedorId], references: [id])
+  fecha       DateTime        @default(now())
+  productos   IngresoProducto[]
+}
+
+model IngresoProducto {
+  id         Int      @id @default(autoincrement())
+  ingresoId  Int
+  ingreso    Ingreso  @relation(fields: [ingresoId], references: [id])
+  productoId Int
+  producto   Producto @relation(fields: [productoId], references: [id])
+  cantidad   Int
+}
+
+model Salida {
+  id          Int             @id @default(autoincrement())
+  documento   String?
+  clienteId   Int
+  cliente     Cliente         @relation(fields: [clienteId], references: [id])
+  fecha       DateTime        @default(now())
+  productos   SalidaProducto[]
+}
+
+model SalidaProducto {
+  id         Int      @id @default(autoincrement())
+  salidaId   Int
+  salida     Salida   @relation(fields: [salidaId], references: [id])
+  productoId Int
+  producto   Producto @relation(fields: [productoId], references: [id])
+  cantidad   Int
+}
