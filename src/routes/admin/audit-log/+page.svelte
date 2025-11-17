@@ -3,9 +3,11 @@
 
 	export let data: PageData;
 
-	function formatDateTime(dateString: string) {
-		const date = new Date(dateString);
-		return date.toLocaleString(); // Formats to local date and time
+	function formatDateTime(date: Date) {
+		return new Intl.DateTimeFormat('es-VE', {
+			dateStyle: 'long',
+			timeStyle: 'short'
+		}).format(date);
 	}
 </script>
 

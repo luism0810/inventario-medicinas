@@ -1,37 +1,24 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { enhance } from '$app/forms';
-	import type { Producto } from '@prisma/client';
-
-	// This interface helps TypeScript understand the shape of the `form` prop,
-	// especially when it's returned from a failed action.
-	interface FormDataType {
-		documento?: string;
-		proveedorId?: number;
-		error?: string;
-		[key: `cantidad_${string}`]: string | undefined;
-	}
-
-	type ProductoConCantidad = Producto & { cantidad: string | number };
+	import { superForm } from 'sveltekit-superforms/client';
 
 	export let data: PageData;
-	export let form: FormDataType | undefined; // Use our custom type
 
-	const productosConCantidad: ProductoConCantidad[] = data.productos.map((p) => {
-		const cantidadKey = `cantidad_${p.id}`;
-		const initialCantidad = form?.[cantidadKey] || '0';
+	const { form, errors, enhance, allErrors } = superForm(data.form);
+
+	// Create a derived store that combines the static product data with the dynamic form quantities
+	$: productosConCantidad = data.productos.map((p, i) => {
 		return {
 			...p,
-			cantidad: initialCantidad
+			// We access the form store for the quantity
+			index: i, // Keep track of the original index
+			cantidad: $form.productos?.[i]?.cantidad ?? 0
 		};
 	});
 
 	let searchTerm = '';
 	$: filteredProducts = productosConCantidad.filter((p) =>
 		p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-	);
-	$: hiddenProducts = productosConCantidad.filter(
-		(p) => !p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
 	);
 </script>
 
@@ -66,26 +53,33 @@
 					type="text"
 					name="documento"
 					id="documento"
-					class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-					value={form?.documento || ''}
-					required
+					class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm sm:text-sm"
+					class:border-red-500={$errors.documento}
+					bind:value={$form.documento}
 				/>
+				{#if $errors.documento}
+					<p class="text-red-500 text-sm mt-1">{$errors.documento}</p>
+				{/if}
 			</div>
 			<div>
 				<label for="proveedorId" class="block text-sm font-medium text-gray-700">Proveedor</label>
 				<select
 					name="proveedorId"
 					id="proveedorId"
-					class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-					required
+					class="mt-1 block w-full px-3 py-2 border bg-white rounded-md shadow-sm sm:text-sm"
+					class:border-red-500={$errors.proveedorId}
+					bind:value={$form.proveedorId}
 				>
-					<option value="" disabled selected={!form?.proveedorId}>Seleccione un proveedor</option>
+					<option value="" disabled>Seleccione un proveedor</option>
 					{#each data.proveedores as proveedor}
-						<option value={proveedor.id} selected={form?.proveedorId == proveedor.id}>
+						<option value={proveedor.id}>
 							{proveedor.nombre}
 						</option>
 					{/each}
 				</select>
+				{#if $errors.proveedorId}
+					<p class="text-red-500 text-sm mt-1">{$errors.proveedorId}</p>
+				{/if}
 			</div>
 		</div>
 
@@ -125,10 +119,15 @@
 						</tr>
 					</thead>
 					<tbody class="bg-white divide-y divide-gray-200">
-						{#each filteredProducts as producto (producto.id)}
-							<tr>
+						{#each data.productos as producto, i}
+							<tr
+								style:display={producto.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+									? ''
+									: 'none'}
+							>
 								<td class="px-6 py-4 whitespace-nowrap">
 									<div class="text-sm font-medium text-gray-900">{producto.nombre}</div>
+									<input type="hidden" name={`productos[${i}].productoId`} value={producto.id} />
 								</td>
 								<td class="px-6 py-4 whitespace-nowrap">
 									<div class="text-sm text-gray-500">{producto.existencia}</div>
@@ -136,10 +135,11 @@
 								<td class="px-6 py-4 whitespace-nowrap">
 									<input
 										type="number"
-										name={`cantidad_${producto.id}`}
+										name={`productos[${i}].cantidad`}
 										min="0"
-										bind:value={producto.cantidad}
-										class="w-24 px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+										bind:value={$form.productos[i].cantidad}
+										class="w-24 px-3 py-1 border rounded-md shadow-sm sm:text-sm"
+										class:border-red-500={$errors.productos?.[i]?.cantidad}
 									/>
 								</td>
 							</tr>
@@ -147,12 +147,10 @@
 					</tbody>
 				</table>
 			</div>
+			{#if $errors.productos?._errors}
+				<p class="text-red-500 text-sm mt-2">{$errors.productos._errors}</p>
+			{/if}
 		</div>
-
-		<!-- Hidden inputs for products that are filtered out, to ensure their values are submitted -->
-		{#each hiddenProducts as producto (producto.id)}
-			<input type="hidden" name="cantidad_{producto.id}" value={producto.cantidad} />
-		{/each}
 
 		<div class="flex justify-end pt-4">
 			<a
@@ -180,8 +178,12 @@
 				Guardar Ingreso
 			</button>
 		</div>
-		{#if form?.error}
-			<p class="text-red-500 text-sm mt-2 text-center">{form.error}</p>
+		{#if allErrors.length > 0}
+			<div class="text-red-500 text-sm mt-2 text-center">
+				{#each allErrors as error}
+					<p>{error.message}</p>
+				{/each}
+			</div>
 		{/if}
 	</form>
 </div>

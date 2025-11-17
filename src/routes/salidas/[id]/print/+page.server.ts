@@ -1,4 +1,4 @@
-import { prisma } from '$lib/prisma';
+import { db } from '$lib/prisma';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ params }) => {
     throw error(404, 'ID de salida inválido');
   }
 
-  const salida = await prisma.salida.findUnique({
+  const salida = await db.salida.findUnique({
     where: { id },
     include: {
       cliente: true,

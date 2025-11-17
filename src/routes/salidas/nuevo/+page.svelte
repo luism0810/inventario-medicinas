@@ -1,46 +1,19 @@
-<!-- src/routes/salidas/nuevo/+page.svelte -->
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { enhance } from '$app/forms';
-
-	// Define a more specific type for the form data when it's returned from a failed action
-	interface FormDataType {
-		clienteId?: number;
-		error?: string;
-		// Allow dynamic properties like 'cantidad_1', 'cantidad_2', etc.
-		[key: `cantidad_${number}`]: string | undefined;
-	}
+	import { superForm } from 'sveltekit-superforms/client';
 
 	export let data: PageData;
-	export let form: FormDataType | undefined; // form can be be undefined initially or on success
+
+	const { form, errors, enhance, allErrors } = superForm(data.form);
 
 	// Search for products
 	let searchTerm = '';
-	$: filteredProducts = data.productos.filter((p) =>
-		p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-	);
 
 	// Search for clients
 	let clienteSearchTerm = '';
 	$: filteredClientes = data.clientes.filter((c) =>
 		c.nombre.toLowerCase().includes(clienteSearchTerm.toLowerCase())
 	);
-
-	// Use an object to store quantities, keyed by producto.id
-	let cantidades: { [key: number]: number } = {};
-
-	// Initialize quantities from form data if available (e.g., after a validation error)
-	if (form) {
-		for (const key in form) {
-			if (key.startsWith('cantidad_')) {
-				const productoId = Number(key.split('_')[1]);
-				const value = form[key as `cantidad_${number}`];
-				if (value) {
-					cantidades[productoId] = Number(value);
-				}
-			}
-		}
-	}
 </script>
 
 <div class="flex items-center justify-between mb-6">
@@ -84,16 +57,20 @@
 				<select
 					name="clienteId"
 					id="clienteId"
-					class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-					required
+					class="mt-1 block w-full px-3 py-2 border bg-white rounded-md shadow-sm sm:text-sm"
+					class:border-red-500={$errors.clienteId}
+					bind:value={$form.clienteId}
 				>
-					<option value="" disabled selected={!form?.clienteId}>Seleccione un cliente</option>
+					<option value="" disabled>Seleccione un cliente</option>
 					{#each filteredClientes as cliente}
-						<option value={cliente.id} selected={form?.clienteId == cliente.id}>
+						<option value={cliente.id}>
 							{cliente.nombre}
 						</option>
 					{/each}
 				</select>
+				{#if $errors.clienteId}
+					<p class="text-red-500 text-sm mt-1">{$errors.clienteId}</p>
+				{/if}
 			</div>
 		</div>
 
@@ -135,10 +112,15 @@
 						</tr>
 					</thead>
 					<tbody class="bg-white divide-y divide-gray-200">
-						{#each filteredProducts as producto}
-							<tr>
+						{#each data.productos as producto, i}
+							<tr
+								style:display={producto.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+									? ''
+									: 'none'}
+							>
 								<td class="px-6 py-4 whitespace-nowrap">
 									<div class="text-sm font-medium text-gray-900">{producto.nombre}</div>
+									<input type="hidden" name={`productos[${i}].productoId`} value={producto.id} />
 								</td>
 								<td class="px-6 py-4 whitespace-nowrap">
 									<div class="text-sm text-gray-500">{producto.existencia}</div>
@@ -146,11 +128,12 @@
 								<td class="px-6 py-4 whitespace-nowrap">
 									<input
 										type="number"
-										name={`cantidad_${producto.id}`}
+										name={`productos[${i}].cantidad`}
 										min="0"
 										max={producto.existencia}
-										bind:value={cantidades[producto.id]}
-										class="w-24 px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+										bind:value={$form.productos[i].cantidad}
+										class="w-24 px-3 py-1 border rounded-md shadow-sm sm:text-sm"
+										class:border-red-500={$errors.productos?.[i]?.cantidad}
 									/>
 								</td>
 							</tr>
@@ -158,6 +141,9 @@
 					</tbody>
 				</table>
 			</div>
+			{#if $errors.productos?._errors}
+				<p class="text-red-500 text-sm mt-2">{$errors.productos._errors}</p>
+			{/if}
 		</div>
 
 		<div class="flex justify-end pt-4">
@@ -184,8 +170,12 @@
 				Guardar Salida
 			</button>
 		</div>
-		{#if form?.error}
-			<p class="text-red-500 text-sm mt-2 text-center">{form.error}</p>
+		{#if allErrors.length > 0}
+			<div class="text-red-500 text-sm mt-2 text-center">
+				{#each allErrors as error}
+					<p>{error.message}</p>
+				{/each}
+			</div>
 		{/if}
 	</form>
 </div>

@@ -2,7 +2,7 @@
 	import type { PageData } from './$types';
 	export let data: PageData;
 
-	$: totalSalida = data.salida.productos.reduce((sum, item) => sum + item.cantidad * item.producto.precio, 0);
+	$: totalSalida = data.salida.productos.reduce((sum, item) => sum + item.cantidad * item.precio, 0);
 
 	function printPage() {
 		window.print();
@@ -56,8 +56,8 @@
 					<tr>
 						<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{item.producto.nombre}</td>
 						<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{item.cantidad}</td>
-						<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{item.producto.precio.toFixed(2)}</td>
-						<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{(item.cantidad * item.producto.precio).toFixed(2)}</td>
+						<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{item.precio.toFixed(2)}</td>
+						<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{(item.cantidad * item.precio).toFixed(2)}</td>
 					</tr>
 				{/each}
 			</tbody>

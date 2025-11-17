@@ -118,4 +118,5 @@ model SalidaProducto {
   productoId Int
   producto   Producto @relation(fields: [productoId], references: [id])
   cantidad   Int
+  precio     Float
 }

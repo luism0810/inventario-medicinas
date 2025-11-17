@@ -2,8 +2,7 @@ import { db } from '$lib/prisma';
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { recordAuditLog } from '$lib/audit';
-import pkg from '@prisma/client';
-const { Presentacion } = pkg;
+import { Presentacion } from '@prisma/client';
 
 export const load: PageServerLoad = async ({ params }) => {
   const producto = await db.producto.findUnique({
@@ -25,10 +24,15 @@ export const actions: Actions = {
 
     const data = await request.formData();
     const nombre = data.get('nombre') as string;
-    const presentacion = data.get('presentacion') as Presentacion;
+    const presentacionRaw = data.get('presentacion') as string;
     const precioRaw = data.get('precio') as string;
     const stockMinimoRaw = data.get('stock_minimo') as string || '0';
     const stockMaximoRaw = data.get('stock_maximo') as string || '0';
+
+    if (!Object.values(Presentacion).includes(presentacionRaw as any)) {
+        return fail(400, { error: 'Presentación no válida.' });
+    }
+    const presentacion = presentacionRaw as Presentacion;
 
     const precio = parseFloat(precioRaw.replace(',', '.'));
     const stock_minimo = parseInt(stockMinimoRaw, 10);
@@ -64,7 +68,7 @@ export const actions: Actions = {
         where: { id: Number(params.id) },
         data: { nombre, presentacion, precio, stock_minimo, stock_maximo },
       });
-      await recordAuditLog(locals.user.id, 'Producto Actualizado', `Producto con ID ${params.id} actualizado. Nombre: "${nombre}".`);
+      await recordAuditLog(locals.user!.id, 'Producto Actualizado', `Producto con ID ${params.id} actualizado. Nombre: "${nombre}".`);
     } catch (error) {
       console.error('Error updating product:', error);
       return fail(500, { message: 'Error al actualizar el producto.' });
