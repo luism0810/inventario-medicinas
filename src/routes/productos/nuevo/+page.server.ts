@@ -1,64 +1,58 @@
-import { db } from '$lib/prisma';
 import { fail, redirect } from '@sveltejs/kit';
-import { recordAuditLog } from '$lib/audit';
-import pkg from '@prisma/client';
-import type { PageServerLoad, Actions } from './$types';
-const { Presentacion } = pkg;
+import { db } from '$lib/prisma';
+import { audit } from '$lib/audit';
 
-export const load: PageServerLoad = async () => {
-  return {
-    presentaciones: Object.values(Presentacion)
-  };
-};
+export const actions = {
+    default: async ({ request, locals }) => {
+        const session = await locals.auth.validate();
+        if (!session) {
+            throw redirect(302, '/login');
+        }
 
-export const actions: Actions = {
-  default: async ({ request, locals }) => {
-    if (!locals.user) {
-      return fail(401, { message: 'No autorizado.' });
-    }
+        const data = await request.formData();
+        const nombre = data.get('nombre')?.toString();
+        const codigo = data.get('codigo')?.toString();
+        const presentacion = data.get('presentacion')?.toString();
+        const precio = parseFloat(data.get('precio')?.toString() || '0');
+        const stock_minimo = parseInt(data.get('stock_minimo')?.toString() || '0');
+        const stock_maximo = parseInt(data.get('stock_maximo')?.toString() || '0');
 
-    const data = await request.formData();
-    const nombre = data.get('nombre') as string;
-    const presentacion = data.get('presentacion') as pkg.Presentacion;
-    const precioRaw = data.get('precio') as string;
-    const stockMinimoRaw = data.get('stock_minimo') as string || '0';
-    const stockMaximoRaw = data.get('stock_maximo') as string || '0';
+        if (!nombre || !codigo) {
+            return fail(400, { message: 'Nombre y Código son campos requeridos.' });
+        }
 
-    const formData = {
-      nombre,
-      presentacion,
-      precio: precioRaw,
-      stock_minimo: stockMinimoRaw,
-      stock_maximo: stockMaximoRaw,
-    };
+        if (stock_minimo > stock_maximo) {
+            return fail(400, { message: 'El stock mínimo no puede ser mayor que el stock máximo.' });
+        }
 
-    const precio = parseFloat(precioRaw.replace(',', '.'));
-    const existencia = 0; // Set existencia to 0 by default
-    const stock_minimo = parseInt(stockMinimoRaw, 10);
-    const stock_maximo = parseInt(stockMaximoRaw, 10);
+        try {
+            // Check for unique name
+            const existingProduct = await db.producto.findUnique({
+                where: { nombre: nombre },
+            });
 
-    if (!nombre) {
-      return fail(400, { ...formData, error: 'El nombre es obligatorio.' });
-    }
+            if (existingProduct) {
+                return fail(400, { message: 'Ya existe un producto con este nombre.' });
+            }
 
-    if (isNaN(precio) || precio <= 0) {
-      return fail(400, { ...formData, error: 'El precio debe ser un número positivo.' });
-    }
+            const newProduct = await db.producto.create({
+                data: {
+                    nombre,
+                    codigo,
+                    presentacion,
+                    precio,
+                    existencia: 0, // New products start with 0 existence
+                    stock_minimo,
+                    stock_maximo,
+                },
+            });
 
-    try {
-      await db.producto.create({
-        data: { nombre, presentacion, precio, existencia, stock_minimo, stock_maximo },
-      });
-      await recordAuditLog(locals.user.id, 'Producto Creado', `Producto "${nombre}" creado.`);
-    } catch (e) {
-      const error = e as { code?: string };
-      // P2002 is the Prisma code for unique constraint violation
-      if (error.code === 'P2002') {
-        return fail(400, { ...formData, error: 'El nombre del producto ya existe.' });
-      }
-      return fail(500, { ...formData, error: 'Error al crear el producto.' });
-    }
+            await audit('CREATE_PRODUCT', session.userId, `Producto creado: ${newProduct.nombre} (ID: ${newProduct.id})`);
 
-    throw redirect(303, '/productos');
-  },
+            throw redirect(302, '/productos');
+        } catch (error: any) {
+            console.error('Error creating product:', error);
+            return fail(500, { message: error.message || 'Error interno del servidor al crear el producto.' });
+        }
+    },
 };

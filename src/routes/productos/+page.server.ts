@@ -6,13 +6,16 @@ import { recordAuditLog } from '$lib/audit';
 export const load: PageServerLoad = async ({ url }) => {
 	const q = url.searchParams.get('q') ?? '';
 
-	const allProductos = await db.producto.findMany({
+	const productos = await db.producto.findMany({
+		where: {
+			nombre: {
+				contains: q
+			}
+		},
 		orderBy: {
 			nombre: 'asc'
-		}
+		},
 	});
-
-	const productos = allProductos.filter((p) => p.nombre.toLowerCase().includes(q.toLowerCase()));
 
 	return { productos, q };
 };
@@ -44,4 +47,3 @@ export const actions: Actions = {
 		return { status: 200, message: 'Producto eliminado' };
 	}
 };
-

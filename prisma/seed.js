@@ -3,7 +3,7 @@ import { parse } from 'csv-parse/sync';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { importEntradas, importSalidas } from './import_transactions.js';
+// import { importEntradas, importSalidas } from './import_transactions.js';
 // Solución para __dirname en módulos ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +11,7 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('Iniciando el proceso de seeding...');
     // --- Limpiar tablas existentes (Salidas e Ingresos) ---
+    /*
     console.log('Limpiando registros de SalidaProducto...');
     await prisma.salidaProducto.deleteMany();
     console.log('Limpiando registros de Salida...');
@@ -20,6 +21,7 @@ async function main() {
     console.log('Limpiando registros de Ingreso...');
     await prisma.ingreso.deleteMany();
     console.log('Tablas Salida e Ingreso limpiadas.');
+    */
     // --- Cargar Clientes ---
     try {
         const clientesPath = path.join(__dirname, 'clientes.csv');
@@ -81,7 +83,8 @@ async function main() {
                 await prisma.producto.create({
                     data: {
                         nombre: record.NOMBRE,
-                        precio: parseFloat(record.PRECIO) || 0,
+                        codigo: record.CODIGO || null,
+                        precio: parseFloat(record.PRECIO.replace(',', '.')) || 0,
                         existencia: parseInt(record.STOCK, 10) || 0
                     }
                 });
@@ -105,30 +108,31 @@ async function main() {
         console.error('Asegúrate de que productos.csv está en la carpeta prisma y que las columnas NOMBRE, PRECIO, y STOCK existen.');
         throw error; // Lanza el error para que sea capturado por el catch principal
     }
+    /*
     // --- Cargar Entradas ---
     try {
-        console.log(`
-Iniciando carga de entradas...`);
-        await importEntradas();
-        console.log(`Entradas cargadas exitosamente.`);
+      console.log(`
+  Iniciando carga de entradas...`);
+      await importEntradas();
+      console.log(`Entradas cargadas exitosamente.`);
+    } catch (error) {
+      console.error(`
+  --- ERROR CARGANDO ENTRADAS ---`);
+      throw error;
     }
-    catch (error) {
-        console.error(`
---- ERROR CARGANDO ENTRADAS ---`);
-        throw error;
-    }
+  
     // --- Cargar Salidas ---
     try {
-        console.log(`
-Iniciando carga de salidas...`);
-        await importSalidas();
-        console.log(`Salidas cargadas exitosamente.`);
+      console.log(`
+  Iniciando carga de salidas...`);
+      await importSalidas();
+      console.log(`Salidas cargadas exitosamente.`);
+    } catch (error) {
+      console.error(`
+  --- ERROR CARGANDO SALIDAS ---`);
+      throw error;
     }
-    catch (error) {
-        console.error(`
---- ERROR CARGANDO SALIDAS ---`);
-        throw error;
-    }
+    */
     console.log(`
 Seeding finalizado exitosamente.`);
 }

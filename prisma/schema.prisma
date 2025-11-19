@@ -42,28 +42,24 @@ model AuditLog {
   details   String
 }
 
-enum Presentacion {
-  UNIDAD
-  GALON
-  KILO
-  CUNETE
-  LITRO
-  CAJA
-  BOLSA
-  METRO
-  ROLLO
+model Presentacion {
+  id       Int        @id @default(autoincrement())
+  nombre   String     @unique
+  productos Producto[]
 }
 
 model Producto {
-  id           Int          @id @default(autoincrement())
-  nombre       String       @unique
-  presentacion Presentacion @default(UNIDAD)
-  precio       Float
-  existencia   Int
-  stock_minimo Int          @default(0)
-  stock_maximo Int          @default(0)
-  ingresos     IngresoProducto[]
-  salidas      SalidaProducto[]
+  id             Int          @id @default(autoincrement())
+  nombre         String       @unique
+  codigo         String?      @unique
+  presentacionId Int
+  presentacion   Presentacion @relation(fields: [presentacionId], references: [id])
+  precio         Float
+  existencia     Int
+  stock_minimo   Int          @default(0)
+  stock_maximo   Int          @default(0)
+  ingresos       IngresoProducto[]
+  salidas        SalidaProducto[]
 }
 
 model Cliente {

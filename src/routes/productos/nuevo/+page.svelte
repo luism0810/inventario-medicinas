@@ -15,7 +15,7 @@
   </h1>
 </div>
 
-<div class="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
+<div class="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto max-h-screen overflow-y-auto">
   <form method="POST" use:enhance class="space-y-6">
     <div>
       <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre del Producto</label>

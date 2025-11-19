@@ -3,7 +3,7 @@ import { parse } from 'csv-parse/sync';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { importEntradas, importSalidas } from './import_transactions.js';
+// import { importEntradas, importSalidas } from './import_transactions.js';
 
 
 // Solución para __dirname en módulos ESM
@@ -16,6 +16,7 @@ async function main() {
   console.log('Iniciando el proceso de seeding...');
 
   // --- Limpiar tablas existentes (Salidas e Ingresos) ---
+  /*
   console.log('Limpiando registros de SalidaProducto...');
   await prisma.salidaProducto.deleteMany();
   console.log('Limpiando registros de Salida...');
@@ -25,6 +26,7 @@ async function main() {
   console.log('Limpiando registros de Ingreso...');
   await prisma.ingreso.deleteMany();
   console.log('Tablas Salida e Ingreso limpiadas.');
+  */
 
   // --- Cargar Clientes ---
   try {
@@ -90,7 +92,8 @@ async function main() {
         await prisma.producto.create({
           data: {
             nombre: record.NOMBRE,
-            precio: parseFloat(record.PRECIO) || 0,
+            codigo: record.CODIGO || null,
+            precio: parseFloat(record.PRECIO.replace(',', '.')) || 0,
             existencia: parseInt(record.STOCK, 10) || 0
           }
         });
@@ -112,6 +115,7 @@ async function main() {
     throw error; // Lanza el error para que sea capturado por el catch principal
   }
 
+  /*
   // --- Cargar Entradas ---
   try {
     console.log(`
@@ -135,6 +139,7 @@ Iniciando carga de salidas...`);
 --- ERROR CARGANDO SALIDAS ---`);
     throw error;
   }
+  */
 
   console.log(`
 Seeding finalizado exitosamente.`);

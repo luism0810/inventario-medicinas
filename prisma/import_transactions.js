@@ -195,9 +195,14 @@ export async function importSalidas() {
                     }
                     await tx.salidaProducto.create({
                         data: {
-                            salidaId: salida.id,
-                            productoId: producto.id,
+                            salida: {
+                                connect: { id: salida.id }
+                            },
+                            producto: {
+                                connect: { id: producto.id }
+                            },
                             cantidad: Math.round(cantidad),
+                            precio: producto.precio,
                         },
                     });
                 }
