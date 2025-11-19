@@ -3,7 +3,6 @@
   import type { PageData, ActionData } from './$types';
   import { createEventDispatcher } from 'svelte';
 
-  export let data: PageData;
   export let form: ActionData;
   export let presentacion: { id: number; nombre: string }; // Prop passed from parent
 

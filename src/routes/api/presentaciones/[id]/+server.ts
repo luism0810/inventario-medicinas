@@ -45,8 +45,11 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
             return json({ error: 'El nombre de la presentación es requerido' }, { status: 400 });
         }
 
-        const existingPresentacion = await db.presentacion.findUnique({
-            where: { id: { not: id }, nombre },
+        const existingPresentacion = await db.presentacion.findFirst({
+            where: {
+                nombre,
+                id: { not: id },
+            },
         });
 
         if (existingPresentacion) {
