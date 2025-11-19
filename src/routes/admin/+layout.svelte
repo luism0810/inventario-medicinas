@@ -16,6 +16,9 @@
 				<li class="mb-2">
 					<a href="/admin/audit-log" class="block hover:bg-gray-700 px-3 py-2 rounded-md">Registro de Auditoría</a>
 				</li>
+				<li class="mb-2">
+					<a href="/admin/presentaciones" class="block hover:bg-gray-700 px-3 py-2 rounded-md">Presentaciones</a>
+				</li>
 				<!-- Add more admin links here -->
 			</ul>
 		</nav>

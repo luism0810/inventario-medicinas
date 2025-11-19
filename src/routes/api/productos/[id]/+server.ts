@@ -1,67 +1,142 @@
-import { db } from '$lib/prisma';
-import { json, error } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { db } from '$lib/prisma';
 
-// PUT /api/productos/[id] - Update an existing product
-export const PUT: RequestHandler = async ({ request, params }) => {
-    try {
-        const id = parseInt(params.id as string);
-        if (isNaN(id)) {
-            throw error(400, 'ID de producto inválido.');
-        }
+export const GET: RequestHandler = async ({ params, locals }) => {
+	if (!locals.user) {
+		return json({ error: 'No autorizado' }, { status: 401 });
+	}
 
-        const productData = await request.json();
+	try {
+		const id = parseInt(params.id);
+		
+		if (isNaN(id)) {
+			return json({ error: 'ID inválido' }, { status: 400 });
+		}
 
-        // Basic validation for nombre if present
-        if (productData.nombre && typeof productData.nombre !== 'string') {
-            throw error(400, 'El nombre del producto debe ser una cadena de texto.');
-        }
-
-        // Check for unique name, excluding the current product being updated
-        if (productData.nombre) {
-            const existingProduct = await db.producto.findFirst({
-                where: {
-                    nombre: productData.nombre,
-                    NOT: {
-                        id: id,
-                    },
-                },
-            });
-
-            if (existingProduct) {
-                throw error(409, 'Ya existe otro producto con este nombre.');
-            }
-        }
-
-        // Remove existencia from productData to prevent direct updates
-        const { existencia, ...dataToUpdate } = productData;
-
-        const updatedProduct = await db.producto.update({ where: { id }, data: dataToUpdate });
-        return json(updatedProduct);
-    } catch (err: any) {
-        if (err.status) {
-            throw err; // Re-throw SvelteKit errors
-        }
-        console.error('Error updating product:', err);
-        throw error(500, err.message || 'Error interno del servidor al actualizar el producto.');
-    }
+		const producto = await db.producto.findUnique({
+			where: { id },
+			include: {
+				presentacion: {
+					select: {
+						id: true,
+						nombre: true,
+					}
+				}
+			}
+		});
+		
+		if (!producto) {
+			return json({ error: 'Producto no encontrado' }, { status: 404 });
+		}
+		
+		return json(producto);
+	} catch (error) {
+		console.error('Error al obtener producto:', error);
+		return json({ error: 'Error interno del servidor' }, { status: 500 });
+	}
 };
 
-// DELETE /api/productos/[id] - Delete a product
-export const DELETE: RequestHandler = async ({ params }) => {
-    try {
-        const id = parseInt(params.id as string);
-        if (isNaN(id)) {
-            throw error(400, 'ID de producto inválido.');
-        }
+export const PATCH: RequestHandler = async ({ params, request, locals }) => {
+	if (!locals.user) {
+		return json({ error: 'No autorizado' }, { status: 401 });
+	}
+	
+	try {
+		const id = parseInt(params.id);
+		
+		if (isNaN(id)) {
+			return json({ error: 'ID inválido' }, { status: 400 });
+		}
 
-        await db.producto.delete({ where: { id } });
-        return new Response(null, { status: 204 }); // No Content
-    } catch (err: any) {
-        if (err.code === 'P2025') { // Prisma error code for record not found
-            throw error(404, 'Producto no encontrado.');
-        }
-        console.error('Error deleting product:', err);
-        throw error(500, err.message || 'Error interno del servidor al eliminar el producto.');
-    }
+		const data = await request.json();
+		
+		// Verificar que el producto existe
+		const existingProduct = await db.producto.findUnique({
+			where: { id }
+		});
+		
+		if (!existingProduct) {
+			return json({ error: 'Producto no encontrado' }, { status: 404 });
+		}
+		
+		// Si se está actualizando el código, verificar que no exista otro con el mismo código
+		if (data.codigo && data.codigo !== existingProduct.codigo) {
+			const duplicateCode = await db.producto.findUnique({
+				where: { codigo: data.codigo }
+			});
+			
+			if (duplicateCode) {
+				return json({ error: 'El código ya está en uso por otro producto' }, { status: 400 });
+			}
+		}
+		
+		const producto = await db.producto.update({
+			where: { id },
+			data: {
+				...data,
+				presentacionId: data.presentacionId ? Number(data.presentacionId) : undefined,
+				updatedAt: new Date()
+			}
+		});
+		
+		return json({ 
+			message: 'Producto actualizado exitosamente',
+			producto 
+		});
+		
+	} catch (error) {
+		console.error('Error al actualizar producto:', error);
+		return json({ error: 'Error al actualizar producto' }, { status: 500 });
+	}
+};
+
+export const DELETE: RequestHandler = async ({ params, locals }) => {
+	if (!locals.user) {
+		return json({ error: 'No autorizado' }, { status: 401 });
+	}
+	
+	try {
+		const id = parseInt(params.id);
+		
+		if (isNaN(id)) {
+			return json({ error: 'ID inválido' }, { status: 400 });
+		}
+
+		// Verificar que el producto existe
+		const existingProduct = await db.producto.findUnique({
+			where: { id }
+		});
+		
+		if (!existingProduct) {
+			return json({ error: 'Producto no encontrado' }, { status: 404 });
+		}
+		
+		// Verificar si hay existencia antes de eliminar
+		if (existingProduct.existencia > 0) {
+			return json({ 
+				error: 'No se puede eliminar un producto con existencia en stock' 
+			}, { status: 400 });
+		}
+		
+		await db.producto.delete({
+			where: { id }
+		});
+		
+		return json({ 
+			message: 'Producto eliminado exitosamente' 
+		});
+		
+	} catch (error) {
+		console.error('Error al eliminar producto:', error);
+		
+		// Manejar error de restricción de clave foránea
+		if (error.code === 'P2003') {
+			return json({ 
+				error: 'No se puede eliminar el producto porque está siendo usado en el sistema' 
+			}, { status: 400 });
+		}
+		
+		return json({ error: 'Error al eliminar producto' }, { status: 500 });
+	}
 };

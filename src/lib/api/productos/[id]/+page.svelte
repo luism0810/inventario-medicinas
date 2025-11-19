@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { PageData, ActionData } from './$types';
-
+	import pkg from '@prisma/client';
+	const { Presentacion } = pkg;
 
 	export let data: PageData;
 	export let form: ActionData;
@@ -34,16 +35,16 @@
 		</div>
 
 		<div>
-			<label for="presentacionId" class="block text-sm font-medium text-gray-700">Presentación</label>
+			<label for="presentacion" class="block text-sm font-medium text-gray-700">Presentación</label>
 			<div class="mt-1">
 				<select
-					name="presentacionId"
-					id="presentacionId"
+					name="presentacion"
+					id="presentacion"
 					class="block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
 					required
 				>
-					{#each data.presentaciones as presentacionOption}
-						<option value={presentacionOption.id} selected={data.producto.presentacion.id === presentacionOption.id}>{presentacionOption.nombre}</option>
+					{#each Object.values(Presentacion) as presentacionOption}
+						<option value={presentacionOption} selected={data.producto.presentacion === presentacionOption}>{presentacionOption}</option>
 					{/each}
 				</select>
 			</div>

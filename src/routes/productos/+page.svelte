@@ -8,6 +8,7 @@
 
   // Los datos, incluyendo los productos, ahora vienen directamente de la función `load` de SvelteKit.
   export let data: PageData;
+  export let presentaciones: any[] = [];
 
   // Estado para controlar la visibilidad del formulario modal.
   let showForm = false;
@@ -19,6 +20,10 @@
   onMount(async () => {
     ProductForm = (await import('$lib/components/ProductForm.svelte')).default;
   });
+
+  $: if (data) {
+    presentaciones = data.presentaciones;
+  }
 
   function onEdit(product: any) {
     editing = { ...product };
@@ -71,7 +76,7 @@
 </div>
 
 {#if showForm && ProductForm}
-  <ProductForm {editing} on:close={onClose} on:saved={onSaved} />
+  <ProductForm {editing} {presentaciones} on:close={onClose} on:saved={onSaved} />
 {/if}
 
 {#if data.productos.length}
@@ -97,7 +102,7 @@
                             <div class="text-sm font-medium text-gray-900">{producto.nombre}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-500">{producto.presentacion}</div>
+                            <div class="text-sm text-gray-500">{producto.presentacion?.nombre || 'N/A'}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">${producto.precio.toFixed(2)}</div>

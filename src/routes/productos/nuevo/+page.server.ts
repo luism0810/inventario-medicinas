@@ -2,6 +2,13 @@ import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/prisma';
 import { audit } from '$lib/audit';
 
+export const load = async () => {
+    const presentaciones = await db.presentacion.findMany({
+        orderBy: { nombre: 'asc' },
+    });
+    return { presentaciones };
+};
+
 export const actions = {
     default: async ({ request, locals }) => {
         const session = await locals.auth.validate();
@@ -12,13 +19,13 @@ export const actions = {
         const data = await request.formData();
         const nombre = data.get('nombre')?.toString();
         const codigo = data.get('codigo')?.toString();
-        const presentacion = data.get('presentacion')?.toString();
+        const presentacionId = parseInt(data.get('presentacionId')?.toString() || '');
         const precio = parseFloat(data.get('precio')?.toString() || '0');
         const stock_minimo = parseInt(data.get('stock_minimo')?.toString() || '0');
         const stock_maximo = parseInt(data.get('stock_maximo')?.toString() || '0');
 
-        if (!nombre || !codigo) {
-            return fail(400, { message: 'Nombre y Código son campos requeridos.' });
+        if (!nombre || !codigo || isNaN(presentacionId)) {
+            return fail(400, { message: 'Nombre, Código y Presentación son campos requeridos.' });
         }
 
         if (stock_minimo > stock_maximo) {
@@ -39,7 +46,7 @@ export const actions = {
                 data: {
                     nombre,
                     codigo,
-                    presentacion,
+                    presentacion: { connect: { id: presentacionId } },
                     precio,
                     existencia: 0, // New products start with 0 existence
                     stock_minimo,

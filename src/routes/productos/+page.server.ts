@@ -12,12 +12,24 @@ export const load: PageServerLoad = async ({ url }) => {
 				contains: q
 			}
 		},
+		include: {
+			presentacion: {
+				select: {
+					id: true,
+					nombre: true,
+				}
+			}
+		},
 		orderBy: {
 			nombre: 'asc'
 		},
 	});
 
-	return { productos, q };
+	const presentaciones = await db.presentacion.findMany({
+		orderBy: { nombre: 'asc' },
+	});
+
+	return { productos, q, presentaciones };
 };
 
 export const actions: Actions = {

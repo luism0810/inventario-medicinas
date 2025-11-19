@@ -3,16 +3,17 @@
   import { createProduct as apiCreate, updateProduct as apiUpdate } from '$lib/api/productos'; // ajusta ruta si es necesario
 
   export let editing: any = null;
+  export let presentaciones: any[] = []; // New prop for presentations
 
   const dispatch = createEventDispatcher();
-  let local: any = { name: '', code: '', price: 0, stock: 0, presentacion: '' }; // Added presentacion
+  let local: any = { nombre: '', codigo: '', precio: 0, existencia: 0, presentacionId: null, stock_minimo: 0, stock_maximo: 0 };
   let errorMessage: string | null = null; // To display error messages
 
   onMount(() => {
     if (editing) {
-      local = { ...editing };
+      local = { ...editing, presentacionId: editing.presentacionId || null };
     } else {
-      local = { nombre: '', codigo: '', precio: 0, existencia: 0, presentacion: '', stock_minimo: 0, stock_maximo: 0 };
+      local = { nombre: '', codigo: '', precio: 0, existencia: 0, presentacionId: null, stock_minimo: 0, stock_maximo: 0 };
     }
   });
 
@@ -67,7 +68,12 @@
 
       <label class="block">
         <span class="text-gray-700 text-sm font-medium">Presentación</span>
-        <input type="text" bind:value={local.presentacion} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+        <select bind:value={local.presentacionId} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+          <option value={null} disabled selected>Seleccione una Presentación</option>
+          {#each presentaciones as presentacion}
+            <option value={presentacion.id}>{presentacion.nombre}</option>
+          {/each}
+        </select>
       </label>
 
       <label class="block">
